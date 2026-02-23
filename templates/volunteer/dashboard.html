@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — VolunteerHub</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ── THEME VARIABLES ── */
+    :root {
+      --pink:     #ff416c;
+      --purple:   #6a11cb;
+      --cyan:     #00c6ff;
+      --bg:       #07071a;
+      --card:     #10102a;
+      --card2:    #13132e;
+      --border:   rgba(255,255,255,0.07);
+      --text:     #f0f0ff;
+      --muted:    rgba(240,240,255,0.5);
+      --input-bg: rgba(255,255,255,0.04);
+      --grad:     linear-gradient(135deg, var(--pink), var(--purple), var(--cyan));
+      --shadow:   rgba(0,0,0,0.5);
+      --blob-op:  0.14;
+      --nav-bg:   rgba(7,7,26,0.88);
+    }
+    html.light {
+      --bg:       #f0f2fc;
+      --card:     #ffffff;
+      --card2:    #f7f8ff;
+      --border:   rgba(0,0,0,0.08);
+      --text:     #0e0e2a;
+      --muted:    rgba(14,14,42,0.5);
+      --input-bg: rgba(0,0,0,0.03);
+      --shadow:   rgba(0,0,0,0.1);
+      --blob-op:  0.055;
+      --nav-bg:   rgba(240,242,252,0.9);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.35s, color 0.35s;
+    }
+
+    /* grain */
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      pointer-events: none; z-index: 998; opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    }
+
+    /* blobs */
+    .blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .blob  { position: absolute; border-radius: 50%; filter: blur(130px); opacity: var(--blob-op); animation: drift 22s ease-in-out infinite alternate; transition: opacity 0.35s; }
+    .blob-1 { width: 700px; height: 700px; background: var(--purple); top: -250px; left: -200px; animation-duration: 24s; }
+    .blob-2 { width: 500px; height: 500px; background: var(--pink);   bottom: -100px; right: -100px; animation-duration: 19s; animation-delay: -9s; }
+    .blob-3 { width: 350px; height: 350px; background: var(--cyan);   top: 35%; left: 55%; animation-duration: 27s; animation-delay: -6s; }
+    @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(55px,35px) scale(1.09); } }
+
+    /* ── NAVBAR ── */
+    .navbar { position: fixed; top: 0; width: 100%; z-index: 100; transition: background 0.4s, box-shadow 0.4s; }
+    .navbar.scrolled { background: var(--nav-bg); backdrop-filter: blur(24px); box-shadow: 0 1px 0 var(--border); }
+    .nav-container { max-width: 1200px; margin: 0 auto; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; text-decoration: none; color: var(--text); letter-spacing: -0.5px; transition: color 0.35s; }
+    .brand span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; align-items: center; gap: 10px; }
+    .nav-icon-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 18px; text-decoration: none;
+      cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .nav-icon-btn:hover { background: rgba(255,65,108,0.12); color: var(--pink); border-color: rgba(255,65,108,0.3); transform: scale(1.08); }
+    html.light .nav-icon-btn { background: rgba(0,0,0,0.05); }
+    .logout-btn:hover { background: rgba(255,65,108,0.12) !important; color: var(--pink) !important; }
+
+    /* ── PAGE LAYOUT ── */
+    .dashboard-page { position: relative; z-index: 2; padding: 96px 0 80px; }
+    .dashboard-container { max-width: 1100px; margin: 0 auto; padding: 0 40px; display: flex; flex-direction: column; gap: 40px; }
+
+    /* ── WELCOME BANNER ── */
+    .welcome-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 28px;
+      padding: 32px 36px;
+      position: relative; overflow: hidden;
+      transition: background 0.35s, border-color 0.35s, box-shadow 0.3s;
+      animation: slideDown 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    .welcome-banner::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--pink), var(--cyan), transparent);
+    }
+    .welcome-banner::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,65,108,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .welcome-banner:hover { box-shadow: 0 20px 60px var(--shadow); border-color: rgba(255,65,108,0.2); }
+    .welcome-banner-left { display: flex; align-items: center; gap: 20px; }
+
+    .welcome-avatar {
+      width: 64px; height: 64px; border-radius: 20px; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(255,65,108,0.15), rgba(106,17,203,0.2));
+      border: 2px solid rgba(255,65,108,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; color: var(--pink); overflow: hidden;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .welcome-avatar:hover { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(255,65,108,0.2); }
+    .welcome-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .welcome-banner-text h1 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .welcome-banner-text p  { font-size: 14px; color: var(--muted); transition: color 0.35s; }
+
+    .btn-edit-profile {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+      box-shadow: 0 6px 30px rgba(255,65,108,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+    .btn-edit-profile:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 10px 40px rgba(255,65,108,0.5); }
+    .btn-edit-profile:active { transform: none; }
+
+    /* ── FLASH ── */
+    .flash-messages { display: flex; flex-direction: column; gap: 10px; animation: fadeUp 0.4s ease; }
+    .flash { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: 14px; font-size: 14px; font-weight: 500; }
+    .flash.success { background: rgba(80,220,100,0.08); border: 1px solid rgba(80,220,100,0.2); color: #4dd97a; }
+    .flash.warning { background: rgba(255,200,50,0.08); border: 1px solid rgba(255,200,50,0.2); color: #ffc832; }
+    .flash.error   { background: rgba(255,65,108,0.08); border: 1px solid rgba(255,65,108,0.2); color: #ff8fa3; }
+    .flash i { font-size: 18px; flex-shrink: 0; }
+
+    /* ── SECTION HEADER ── */
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .section-icon {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--pink);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .section-header:hover .section-icon { transform: rotate(-8deg) scale(1.1); box-shadow: 0 4px 16px rgba(255,65,108,0.25); }
+    .section-header h2 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
+    .section-count {
+      margin-left: auto; padding: 3px 12px; border-radius: 50px;
+      background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.2);
+      font-size: 13px; font-weight: 700; color: var(--pink);
+    }
+
+    /* ── SKILLS CARD ── */
+    .skills-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 28px;
+      transition: background 0.35s, border-color 0.35s, box-shadow 0.3s;
+      animation: fadeUp 0.5s ease both; animation-delay: 0.1s;
+    }
+    .skills-card:hover { box-shadow: 0 16px 50px var(--shadow); border-color: rgba(255,65,108,0.15); }
+
+    .skills-status {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      border-radius: 14px; margin-bottom: 20px; font-size: 14px; font-weight: 500;
+      transition: transform 0.2s;
+    }
+    .skills-status:hover { transform: translateX(4px); }
+    .skills-status.unlocked { background: rgba(80,220,100,0.08); border: 1px solid rgba(80,220,100,0.2); color: #4dd97a; }
+    .skills-status.locked   { background: rgba(255,65,108,0.08); border: 1px solid rgba(255,65,108,0.2); color: #ff8fa3; }
+    .skills-status-icon { font-size: 20px; flex-shrink: 0; }
+
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .skill-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 50px;
+      background: rgba(106,17,203,0.12); border: 1px solid rgba(106,17,203,0.25);
+      font-size: 13px; font-weight: 600; color: #a76ff0;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+      cursor: default;
+    }
+    .skill-tag:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 4px 16px rgba(106,17,203,0.2); background: rgba(106,17,203,0.2); }
+    .skill-tag i { font-size: 13px; }
+
+    .skills-form { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+    .skills-input-wrap { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .skills-input {
+      width: 100%; padding: 12px 16px;
+      background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s, background 0.35s, box-shadow 0.2s;
+    }
+    .skills-input:focus { border-color: rgba(255,65,108,0.45); background: rgba(255,65,108,0.04); box-shadow: 0 0 0 3px rgba(255,65,108,0.08); }
+    .skills-input-hint { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    .btn-save-skills {
+      padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(255,65,108,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-save-skills:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,65,108,0.5); }
+
+    .skill-suggestions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .skill-suggestion-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .skill-chip {
+      padding: 5px 12px; border-radius: 50px; border: 1px solid var(--border);
+      background: var(--input-bg); color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+    }
+    .skill-chip:hover { background: rgba(255,65,108,0.1); border-color: rgba(255,65,108,0.3); color: var(--pink); transform: scale(1.06); }
+
+    /* ── ACTIVITIES GRID ── */
+    .activities-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+    .activity-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 24px;
+      display: flex; flex-direction: column; gap: 14px;
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s, background 0.35s;
+      position: relative; overflow: hidden;
+      animation: fadeUp 0.5s ease both;
+    }
+    .activity-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: 22px;
+      background: linear-gradient(135deg, rgba(255,65,108,0.05), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .activity-card:hover { transform: translateY(-6px); border-color: rgba(255,65,108,0.3); box-shadow: 0 20px 60px var(--shadow); }
+    .activity-card:hover::before { opacity: 1; }
+    .activity-card.locked-card { opacity: 0.7; }
+    .activity-card.locked-card:hover { border-color: rgba(255,200,50,0.2); }
+
+    .activity-card-header { display: flex; flex-direction: column; gap: 6px; }
+    .activity-name { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+    .activity-date { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 5px; transition: color 0.35s; }
+    .activity-date i { color: var(--cyan); }
+
+    .activity-req-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .req-skill-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: 600;
+      transition: transform 0.2s;
+    }
+    .req-skill-tag:hover { transform: scale(1.06); }
+    .req-skill-tag.have    { background: rgba(80,220,100,0.1); border: 1px solid rgba(80,220,100,0.25); color: #4dd97a; }
+    .req-skill-tag.missing { background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.25); color: #ff8fa3; }
+
+    .activity-warning {
+      display: flex; align-items: flex-start; gap: 8px; padding: 10px 14px;
+      background: rgba(255,200,50,0.06); border: 1px solid rgba(255,200,50,0.2);
+      border-radius: 10px; font-size: 13px; color: #ffc832;
+    }
+    .activity-warning i { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    .activity-card-footer { margin-top: auto; }
+    .btn-join {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 20px; border-radius: 50px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+      text-decoration: none; box-shadow: 0 4px 20px rgba(255,65,108,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-join:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 30px rgba(255,65,108,0.5); }
+    .btn-join-disabled {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 20px; border-radius: 50px; border: 1px solid var(--border);
+      background: var(--input-bg); color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: not-allowed; opacity: 0.6;
+    }
+
+    /* empty state */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      padding: 60px 40px; background: var(--card); border: 1px dashed var(--border);
+      border-radius: 22px; text-align: center; color: var(--muted); font-size: 15px;
+      transition: background 0.35s, border-color 0.35s;
+      animation: fadeUp 0.4s ease;
+    }
+    .empty-state i { font-size: 48px; opacity: 0.4; }
+
+    /* ── MY ACTIVITIES LIST ── */
+    .my-activities-list { display: flex; flex-direction: column; gap: 12px; }
+    .my-activity-row {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+      padding: 18px 24px;
+      transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s, background 0.35s;
+      animation: fadeUp 0.5s ease both;
+      position: relative; overflow: hidden;
+    }
+    .my-activity-row::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: linear-gradient(180deg, var(--pink), var(--purple));
+      transform: scaleY(0); transform-origin: bottom;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      border-radius: 0 2px 2px 0;
+    }
+    .my-activity-row:hover { transform: translateX(4px); border-color: rgba(255,65,108,0.2); box-shadow: 0 8px 30px var(--shadow); }
+    .my-activity-row:hover::before { transform: scaleY(1); }
+
+    .my-activity-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; flex: 1; min-width: 120px; }
+    .my-activity-date { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 5px; transition: color 0.35s; }
+    .my-activity-date i { color: var(--cyan); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 50px; font-size: 12px; font-weight: 700;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .badge:hover { transform: scale(1.06); }
+    .badge-attendance         { background: rgba(255,200,50,0.1); border: 1px solid rgba(255,200,50,0.25); color: #ffc832; }
+    .badge-attendance.attended{ background: rgba(80,220,100,0.1); border: 1px solid rgba(80,220,100,0.25); color: #4dd97a; }
+    .badge-rating             { background: rgba(0,198,255,0.1);  border: 1px solid rgba(0,198,255,0.2);  color: var(--cyan); }
+
+    /* ── SLIDE-OUT PANEL ── */
+    .panel-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s;
+    }
+    .panel-overlay.open { opacity: 1; pointer-events: all; }
+
+    .profile-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 201;
+      width: 420px; max-width: 95vw;
+      background: var(--card); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), background 0.35s, border-color 0.35s;
+      overflow-y: auto;
+    }
+    .profile-panel.open { transform: translateX(0); box-shadow: -20px 0 60px rgba(0,0,0,0.4); }
+
+    .panel-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 24px 24px 0; position: sticky; top: 0;
+      background: var(--card); z-index: 1;
+      transition: background 0.35s;
+    }
+    .panel-header h2 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; }
+    .btn-close-panel {
+      margin-left: auto; width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 20px; cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+    }
+    .btn-close-panel:hover { background: rgba(255,65,108,0.12); color: var(--pink); transform: rotate(90deg); }
+
+    .panel-tabs {
+      display: flex; gap: 4px; padding: 16px 24px 0;
+      position: sticky; top: 68px; background: var(--card); z-index: 1;
+      transition: background 0.35s;
+    }
+    .panel-tab {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px; border-radius: 10px; border: none;
+      background: transparent; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .panel-tab.active { background: rgba(255,65,108,0.12); color: var(--pink); }
+    .panel-tab:not(.active):hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+    .panel-body { flex: 1; padding: 20px 24px 32px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeUp 0.35s ease; }
+
+    .panel-section { display: flex; flex-direction: column; gap: 16px; }
+    .panel-section-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+      transition: color 0.35s;
+    }
+
+    /* avatar upload */
+    .avatar-upload-area { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px; background: var(--input-bg); border: 1px dashed var(--border); border-radius: 18px; transition: border-color 0.2s, background 0.35s; }
+    .avatar-upload-area:hover { border-color: rgba(255,65,108,0.35); }
+    .avatar-preview-wrap { position: relative; }
+    .avatar-preview {
+      width: 88px; height: 88px; border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,65,108,0.12), rgba(106,17,203,0.18));
+      border: 2px solid rgba(255,65,108,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; color: var(--pink); overflow: hidden;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .avatar-preview:hover { transform: scale(1.05); box-shadow: 0 8px 30px rgba(255,65,108,0.25); }
+    .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-edit-badge {
+      position: absolute; bottom: -6px; right: -6px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--pink); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+      cursor: pointer; border: 2px solid var(--card);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .avatar-edit-badge:hover { transform: scale(1.15); box-shadow: 0 4px 12px rgba(255,65,108,0.5); }
+    .avatar-upload-info { text-align: center; }
+    .avatar-upload-info p  { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .avatar-upload-info span { font-size: 12px; color: var(--muted); }
+    input[type="file"] { display: none; }
+    .btn-choose-file {
+      display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px;
+      border-radius: 10px; background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.25);
+      color: var(--pink); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s, transform 0.2s;
+    }
+    .btn-choose-file:hover { background: rgba(255,65,108,0.18); transform: translateY(-1px); }
+    .btn-upload-submit {
+      width: 100%; padding: 12px; border-radius: 12px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+      display: none; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 20px rgba(255,65,108,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 8px;
+    }
+    .btn-upload-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,65,108,0.5); }
+
+    /* panel form */
+    .form-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+    .form-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); transition: color 0.35s; }
+    .form-hint  { font-size: 12px; color: var(--muted); transition: color 0.35s; }
+    .form-input {
+      width: 100%; padding: 12px 14px;
+      background: var(--input-bg); border: 1px solid var(--border); border-radius: 12px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s, background 0.35s, box-shadow 0.2s, color 0.35s;
+    }
+    .form-input:focus { border-color: rgba(255,65,108,0.45); background: rgba(255,65,108,0.04); box-shadow: 0 0 0 3px rgba(255,65,108,0.08); }
+    .form-input::placeholder { color: var(--muted); }
+    .btn-panel-submit {
+      width: 100%; padding: 12px; border-radius: 12px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 20px rgba(255,65,108,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-panel-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,65,108,0.5); }
+
+    /* password input */
+    .password-input-wrap { position: relative; }
+    .password-input-wrap .form-input { padding-right: 44px; }
+    .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); font-size: 17px; display: flex; align-items: center; transition: color 0.2s; }
+    .password-toggle:hover { color: var(--pink); }
+
+    /* strength bars */
+    .pw-strength { display: flex; gap: 5px; margin-top: 8px; }
+    .pw-bar { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+    .pw-bar.weak   { background: var(--pink); }
+    .pw-bar.medium { background: #ffc832; }
+    .pw-bar.strong { background: #4dd97a; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes slideDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:none; } }
+    @keyframes fadeUp    { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:none; } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .dashboard-container { padding: 0 20px; gap: 28px; }
+      .nav-container { padding: 16px 20px; }
+      .welcome-banner { flex-direction: column; align-items: flex-start; padding: 24px; }
+      .activities-grid { grid-template-columns: 1fr; }
+      .my-activity-row { gap: 10px; }
+      .profile-panel { width: 100vw; }
+    }
+    @media (max-width: 480px) {
+      .welcome-banner-left { gap: 14px; }
+      .welcome-banner-text h1 { font-size: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand">Volunteer<span>Hub</span></a>
+      <div class="nav-links">
+        <a href="/volunteer/dashboard" class="nav-icon-btn" title="Dashboard"><i class="ri-dashboard-line"></i></a>
+        <button class="nav-icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+          <i class="ri-sun-line" id="themeIcon"></i>
+        </button>
+        <a href="/logout" class="nav-icon-btn logout-btn" title="Logout"><i class="ri-logout-box-r-line"></i></a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard-page">
+    <div class="dashboard-container">
+
+      <!-- Welcome Banner -->
+      <div class="welcome-banner">
+        <div class="welcome-banner-left">
+          <div class="welcome-avatar">
+            {% if profile_picture %}
+              <img src="/static/uploads/avatars/{{ profile_picture }}" alt="Profile picture" />
+            {% else %}
+              <i class="ri-user-3-line"></i>
+            {% endif %}
+          </div>
+          <div class="welcome-banner-text">
+            <h1>Welcome back, {{ first_name }}! 👋</h1>
+            <p>Manage your profile, skills and activities below.</p>
+          </div>
+        </div>
+        <button class="btn-edit-profile" onclick="openPanel()">
+          <i class="ri-user-settings-line"></i> Edit Profile
+        </button>
+      </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">
+                {% if category == 'success' %}<i class="ri-checkbox-circle-line"></i>
+                {% elif category == 'warning' %}<i class="ri-error-warning-line"></i>
+                {% else %}<i class="ri-close-circle-line"></i>{% endif %}
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- MY SKILLS -->
+      <div>
+        <div class="section-header">
+          <div class="section-icon"><i class="ri-tools-line"></i></div>
+          <h2>My Skills</h2>
+          <span class="section-count">{{ skills_count }}</span>
+        </div>
+        <div class="skills-card">
+          {% if skills_count >= 2 %}
+            <div class="skills-status unlocked">
+              <i class="ri-shield-check-line skills-status-icon"></i>
+              <span>You have {{ skills_count }} skill{{ 's' if skills_count != 1 }} — you can join matching activities.</span>
+            </div>
+          {% else %}
+            <div class="skills-status locked">
+              <i class="ri-lock-line skills-status-icon"></i>
+              <span>Add at least {{ 2 - skills_count }} more skill{{ 's' if (2 - skills_count) != 1 }} to join activities.</span>
+            </div>
+          {% endif %}
+          {% if volunteer_skills %}
+            <div class="skill-tags">
+              {% for skill in volunteer_skills %}
+                <span class="skill-tag"><i class="ri-checkbox-circle-fill"></i>{{ skill }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <form method="POST" action="/volunteer/skills/update">
+            <div class="skills-form">
+              <div class="skills-input-wrap">
+                <input type="text" name="skills" id="skillsInput" class="skills-input"
+                  placeholder="e.g. First Aid, Photography, Teaching"
+                  value="{{ volunteer_skills | join(', ') }}" autocomplete="off" />
+                <span class="skills-input-hint"><i class="ri-information-line"></i> Enter skills separated by commas. You need at least 2 to join activities.</span>
+              </div>
+              <button type="submit" class="btn-save-skills"><i class="ri-save-line"></i> Save</button>
+            </div>
+            <div class="skill-suggestions">
+              <span class="skill-suggestion-label">Quick add:</span>
+              {% set suggestions = ['First Aid','Photography','Teaching','Communication','Event Management','Cooking','Logistics','IT Support','Graphic Design','Leadership','Music','Sports Coaching','Translation','Fundraising','Social Media'] %}
+              {% for s in suggestions %}
+                {% if s not in volunteer_skills %}
+                  <button type="button" class="skill-chip" onclick="addSkill('{{ s }}')">+ {{ s }}</button>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- AVAILABLE ACTIVITIES -->
+      <div>
+        <div class="section-header">
+          <div class="section-icon"><i class="ri-calendar-event-line"></i></div>
+          <h2>Available Activities</h2>
+          <span class="section-count">{{ activities | length }}</span>
+        </div>
+        {% if activities %}
+          <div class="activities-grid">
+            {% for a in activities %}
+              <div class="activity-card {% if not a.eligible %}locked-card{% endif %}" style="animation-delay: {{ loop.index0 * 0.07 }}s;">
+                <div class="activity-card-header">
+                  <span class="activity-name">{{ a.name }}</span>
+                  <span class="activity-date"><i class="ri-calendar-line"></i>{{ a.date }}</span>
+                </div>
+                {% if a.req_skills %}
+                  <div class="activity-req-skills">
+                    {% for skill in a.req_skills %}
+                      {% if skill in volunteer_skills %}
+                        <span class="req-skill-tag have"><i class="ri-check-line"></i> {{ skill }}</span>
+                      {% else %}
+                        <span class="req-skill-tag missing"><i class="ri-close-line"></i> {{ skill }}</span>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                {% if not a.eligible %}
+                  <div class="activity-warning">
+                    <i class="ri-error-warning-line"></i>
+                    <span>{% if skills_count < 2 %}Add at least 2 skills to join activities.{% else %}Missing: <strong>{{ a.missing | join(', ') }}</strong>{% endif %}</span>
+                  </div>
+                {% endif %}
+                <div class="activity-card-footer">
+                  {% if a.eligible %}
+                    <a href="/volunteer/join/{{ a.id }}" class="btn-join"><i class="ri-add-circle-line"></i> Join Activity</a>
+                  {% else %}
+                    <button class="btn-join-disabled" disabled><i class="ri-lock-line"></i> Skills Required</button>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <i class="ri-calendar-2-line"></i>
+            No activities available right now. Check back soon!
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- MY ACTIVITIES -->
+      <div>
+        <div class="section-header">
+          <div class="section-icon"><i class="ri-checkbox-circle-line"></i></div>
+          <h2>My Activities</h2>
+          <span class="section-count">{{ joined | length }}</span>
+        </div>
+        {% if joined %}
+          <div class="my-activities-list">
+            {% for j in joined %}
+              <div class="my-activity-row" style="animation-delay: {{ loop.index0 * 0.06 }}s;">
+                <span class="my-activity-name">{{ j[0] }}</span>
+                <span class="my-activity-date"><i class="ri-calendar-line"></i>{{ j[1] }}</span>
+                {% if j[3] == 'Present' or j[3] == True or j[3] == 1 %}
+                  <span class="badge badge-attendance attended"><i class="ri-checkbox-circle-line"></i> Present</span>
+                {% else %}
+                  <span class="badge badge-attendance"><i class="ri-time-line"></i> {{ j[3] if j[3] else 'Pending' }}</span>
+                {% endif %}
+                <span class="badge badge-rating">
+                  <i class="ri-star-line"></i>
+                  {% if j[4] %}{{ j[4] }} / 5{% else %}Not rated{% endif %}
+                </span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <i class="ri-inbox-line"></i>
+            You haven't joined any activities yet. Explore above!
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer style="position:relative;z-index:2;border-top:1px solid var(--border);padding:28px 40px;transition:border-color 0.35s;">
+    <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px;">Volunteer<span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Hub</span></div>
+      <div style="font-size:13px;color:var(--muted);transition:color 0.35s;">B.Tech 4th Semester &middot; DBMS Project</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="padding:4px 13px;border-radius:50px;background:rgba(255,65,108,0.08);border:1px solid rgba(255,65,108,0.18);font-size:12px;color:var(--muted);font-weight:500;">Python</span>
+        <span style="padding:4px 13px;border-radius:50px;background:rgba(255,65,108,0.08);border:1px solid rgba(255,65,108,0.18);font-size:12px;color:var(--muted);font-weight:500;">Flask</span>
+        <span style="padding:4px 13px;border-radius:50px;background:rgba(255,65,108,0.08);border:1px solid rgba(255,65,108,0.18);font-size:12px;color:var(--muted);font-weight:500;">MySQL</span>
+        <span style="padding:4px 13px;border-radius:50px;background:rgba(255,65,108,0.08);border:1px solid rgba(255,65,108,0.18);font-size:12px;color:var(--muted);font-weight:500;">HTML/CSS/JS</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- PANEL OVERLAY -->
+  <div class="panel-overlay" id="panelOverlay" onclick="closePanel()"></div>
+
+  <!-- PROFILE PANEL -->
+  <aside class="profile-panel" id="profilePanel" aria-label="Edit Profile">
+    <div class="panel-header">
+      <div class="section-icon"><i class="ri-user-settings-line"></i></div>
+      <h2>Edit Profile</h2>
+      <button class="btn-close-panel" onclick="closePanel()" aria-label="Close"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="panel-tabs">
+      <button class="panel-tab active" onclick="switchTab('tab-photo', this)"><i class="ri-image-line"></i> Photo</button>
+      <button class="panel-tab" onclick="switchTab('tab-skills', this)"><i class="ri-tools-line"></i> Skills</button>
+      <button class="panel-tab" onclick="switchTab('tab-password', this)"><i class="ri-lock-password-line"></i> Password</button>
+    </div>
+    <div class="panel-body">
+
+      <!-- TAB: Photo -->
+      <div class="tab-content active" id="tab-photo">
+        <div class="panel-section">
+          <div class="panel-section-title"><i class="ri-image-add-line"></i> Profile Picture</div>
+          <form method="POST" action="/volunteer/profile/picture" enctype="multipart/form-data" id="photoForm">
+            <div class="avatar-upload-area">
+              <div class="avatar-preview-wrap">
+                <div class="avatar-preview" id="avatarPreview">
+                  {% if profile_picture %}
+                    <img src="/static/uploads/avatars/{{ profile_picture }}" alt="Current profile picture" id="avatarImg" />
+                  {% else %}
+                    <i class="ri-user-3-line" id="avatarIcon"></i>
+                  {% endif %}
+                </div>
+                <label for="fileInput" class="avatar-edit-badge" title="Choose photo"><i class="ri-pencil-line"></i></label>
+              </div>
+              <div class="avatar-upload-info">
+                <p id="fileLabel">{% if profile_picture %}Current photo uploaded{% else %}No photo yet{% endif %}</p>
+                <span>JPG, PNG, GIF or WebP · Max 2 MB</span>
+              </div>
+              <label for="fileInput" class="btn-choose-file"><i class="ri-folder-open-line"></i> Choose Image</label>
+              <input type="file" id="fileInput" name="profile_picture" accept=".jpg,.jpeg,.png,.gif,.webp" onchange="previewImage(event)" />
+            </div>
+            <button type="submit" class="btn-upload-submit" id="uploadBtn"><i class="ri-upload-cloud-line"></i> Upload Photo</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: Skills -->
+      <div class="tab-content" id="tab-skills">
+        <div class="panel-section">
+          <div class="panel-section-title"><i class="ri-tools-line"></i> My Skills</div>
+          <div class="skills-status {% if skills_count >= 2 %}unlocked{% else %}locked{% endif %}" style="margin-bottom:1rem;">
+            <i class="{% if skills_count >= 2 %}ri-shield-check-line{% else %}ri-lock-line{% endif %} skills-status-icon"></i>
+            <span>{% if skills_count >= 2 %}{{ skills_count }} skills — eligible to join activities{% else %}Need {{ 2 - skills_count }} more skill{{ 's' if (2 - skills_count) != 1 }} to unlock activities{% endif %}</span>
+          </div>
+          {% if volunteer_skills %}
+            <div class="skill-tags" style="margin-bottom:1rem;">
+              {% for skill in volunteer_skills %}
+                <span class="skill-tag"><i class="ri-checkbox-circle-fill"></i>{{ skill }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <form method="POST" action="/volunteer/skills/update">
+            <div class="form-group">
+              <label class="form-label">Skills (comma-separated)</label>
+              <textarea name="skills" id="panelSkillsInput" class="form-input" rows="3" style="resize:vertical;" placeholder="First Aid, Photography...">{{ volunteer_skills | join(', ') }}</textarea>
+              <span class="form-hint">Enter all your skills separated by commas.</span>
+            </div>
+            <div class="skill-suggestions" style="margin-bottom:1rem;">
+              <span class="skill-suggestion-label">Quick add:</span>
+              {% for s in suggestions %}
+                {% if s not in volunteer_skills %}
+                  <button type="button" class="skill-chip" onclick="addSkillPanel('{{ s }}')">+ {{ s }}</button>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <button type="submit" class="btn-panel-submit"><i class="ri-save-line"></i> Save Skills</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: Password -->
+      <div class="tab-content" id="tab-password">
+        <div class="panel-section">
+          <div class="panel-section-title"><i class="ri-lock-password-line"></i> Change Password</div>
+          <form method="POST" action="/volunteer/profile/password" id="passwordForm">
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <div class="password-input-wrap">
+                <input type="password" name="current_password" id="currentPw" class="form-input" placeholder="Enter current password" />
+                <button type="button" class="password-toggle" onclick="togglePw('currentPw', this)"><i class="ri-eye-line"></i></button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <div class="password-input-wrap">
+                <input type="password" name="new_password" id="newPw" class="form-input" placeholder="Min 8 characters" oninput="checkStrength(this.value)" />
+                <button type="button" class="password-toggle" onclick="togglePw('newPw', this)"><i class="ri-eye-line"></i></button>
+              </div>
+              <div class="pw-strength" id="pwStrength">
+                <div class="pw-bar" id="bar1"></div>
+                <div class="pw-bar" id="bar2"></div>
+                <div class="pw-bar" id="bar3"></div>
+                <div class="pw-bar" id="bar4"></div>
+              </div>
+              <span class="form-hint" id="pwStrengthLabel"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <div class="password-input-wrap">
+                <input type="password" name="confirm_password" id="confirmPw" class="form-input" placeholder="Re-enter new password" oninput="checkMatch()" />
+                <button type="button" class="password-toggle" onclick="togglePw('confirmPw', this)"><i class="ri-eye-line"></i></button>
+              </div>
+              <span class="form-hint" id="matchLabel"></span>
+            </div>
+            <button type="submit" class="btn-panel-submit"><i class="ri-shield-keyhole-line"></i> Update Password</button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <script>
+    /* ── THEME ── */
+    const html      = document.documentElement;
+    const themeBtn  = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    function applyTheme(mode) {
+      html.classList.toggle('light', mode === 'light');
+      themeIcon.className = mode === 'light' ? 'ri-moon-line' : 'ri-sun-line';
+      localStorage.setItem('vh-theme', mode);
+    }
+    applyTheme(localStorage.getItem('vh-theme') || 'dark');
+    themeBtn.addEventListener('click', () => applyTheme(html.classList.contains('light') ? 'dark' : 'light'));
+
+    /* ── NAVBAR SCROLL ── */
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+    });
+
+    /* ── SCROLL REVEAL for cards/rows ── */
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.style.opacity = '1';
+          e.target.style.transform = 'none';
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.activity-card, .my-activity-row').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(18px)';
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      io.observe(el);
+    });
+
+    /* ── SKILLS ── */
+    function addSkill(name) {
+      const inp = document.getElementById('skillsInput');
+      const list = inp.value.trim() ? inp.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+      if (!list.map(s => s.toLowerCase()).includes(name.toLowerCase())) list.push(name);
+      inp.value = list.join(', ');
+      inp.style.borderColor = 'rgba(255,65,108,0.6)';
+      inp.style.boxShadow = '0 0 0 3px rgba(255,65,108,0.12)';
+      setTimeout(() => { inp.style.borderColor = ''; inp.style.boxShadow = ''; }, 900);
+    }
+    function addSkillPanel(name) {
+      const inp = document.getElementById('panelSkillsInput');
+      const list = inp.value.trim() ? inp.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+      if (!list.map(s => s.toLowerCase()).includes(name.toLowerCase())) list.push(name);
+      inp.value = list.join(', ');
+    }
+
+    /* ── PANEL ── */
+    function openPanel(tab) {
+      document.getElementById('profilePanel').classList.add('open');
+      document.getElementById('panelOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (tab) switchTabByName(tab);
+    }
+    function closePanel() {
+      document.getElementById('profilePanel').classList.remove('open');
+      document.getElementById('panelOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+    /* ── TABS ── */
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    /* ── AVATAR PREVIEW ── */
+    function previewImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('fileLabel').textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        document.getElementById('avatarPreview').innerHTML = `<img src="${evt.target.result}" alt="Preview" />`;
+      };
+      reader.readAsDataURL(file);
+      const btn = document.getElementById('uploadBtn');
+      btn.style.display = 'flex';
+    }
+
+    /* ── PASSWORD ── */
+    function togglePw(id, btn) {
+      const inp = document.getElementById(id);
+      const hidden = inp.type === 'password';
+      inp.type = hidden ? 'text' : 'password';
+      btn.innerHTML = hidden ? '<i class="ri-eye-off-line"></i>' : '<i class="ri-eye-line"></i>';
+    }
+    function checkStrength(pw) {
+      const bars  = [1,2,3,4].map(i => document.getElementById('bar' + i));
+      const label = document.getElementById('pwStrengthLabel');
+      bars.forEach(b => b.className = 'pw-bar');
+      if (!pw) { label.textContent = ''; return; }
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (/[A-Z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+      const lvl = ['weak','weak','medium','strong'];
+      const lbl = ['Too short','Weak','Medium','Strong'];
+      for (let i = 0; i < score; i++) bars[i].classList.add(lvl[score - 1]);
+      label.textContent = lbl[score - 1] || '';
+    }
+    function checkMatch() {
+      const nw = document.getElementById('newPw').value;
+      const cf = document.getElementById('confirmPw').value;
+      const lbl = document.getElementById('matchLabel');
+      if (!cf) { lbl.textContent = ''; return; }
+      lbl.textContent = nw === cf ? '✓ Passwords match' : '✗ Passwords do not match';
+      lbl.style.color = nw === cf ? '#4dd97a' : '#ff8fa3';
+    }
+
+    /* ── AUTO-OPEN PANEL on password/picture flash ── */
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        {% if 'password' in message.lower() or 'picture' in message.lower() %}
+          document.addEventListener('DOMContentLoaded', () => openPanel());
+        {% endif %}
+      {% endfor %}
+    {% endwith %}
+  </script>
+
+</body>
+</html>

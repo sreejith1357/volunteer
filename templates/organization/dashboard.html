@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ org_name }} — Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ── THEME ── */
+    :root {
+      --pink:     #ff416c;
+      --purple:   #6a11cb;
+      --cyan:     #00c6ff;
+      --bg:       #07071a;
+      --card:     #10102a;
+      --border:   rgba(255,255,255,0.07);
+      --text:     #f0f0ff;
+      --muted:    rgba(240,240,255,0.5);
+      --input-bg: rgba(255,255,255,0.04);
+      --grad:     linear-gradient(135deg, var(--pink), var(--purple), var(--cyan));
+      --shadow:   rgba(0,0,0,0.5);
+      --blob-op:  0.14;
+      --nav-bg:   rgba(7,7,26,0.88);
+    }
+    html.light {
+      --bg:       #f0f2fc;
+      --card:     #ffffff;
+      --border:   rgba(0,0,0,0.08);
+      --text:     #0e0e2a;
+      --muted:    rgba(14,14,42,0.5);
+      --input-bg: rgba(0,0,0,0.03);
+      --shadow:   rgba(0,0,0,0.1);
+      --blob-op:  0.055;
+      --nav-bg:   rgba(240,242,252,0.9);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+      transition: background 0.35s, color 0.35s;
+    }
+
+    /* grain */
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      pointer-events: none; z-index: 998; opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    }
+
+    /* blobs */
+    .blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .blob  { position: absolute; border-radius: 50%; filter: blur(130px); opacity: var(--blob-op); animation: drift 22s ease-in-out infinite alternate; transition: opacity 0.35s; }
+    .blob-1 { width: 700px; height: 700px; background: var(--purple); top: -250px; left: -200px; animation-duration: 24s; }
+    .blob-2 { width: 500px; height: 500px; background: var(--pink);   bottom: -100px; right: -100px; animation-duration: 19s; animation-delay: -9s; }
+    .blob-3 { width: 350px; height: 350px; background: var(--cyan);   top: 35%; left: 55%; animation-duration: 27s; animation-delay: -6s; }
+    @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(55px,35px) scale(1.09); } }
+
+    /* ── NAVBAR ── */
+    .navbar { position: fixed; top: 0; width: 100%; z-index: 100; transition: background 0.4s, box-shadow 0.4s; }
+    .navbar.scrolled { background: var(--nav-bg); backdrop-filter: blur(24px); box-shadow: 0 1px 0 var(--border); }
+    .nav-container { max-width: 1100px; margin: 0 auto; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; text-decoration: none; color: var(--text); letter-spacing: -0.5px; transition: color 0.35s; }
+    .brand span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; align-items: center; gap: 10px; }
+    .nav-icon-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 18px; text-decoration: none; cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .nav-icon-btn:hover { background: rgba(255,65,108,0.12); color: var(--pink); border-color: rgba(255,65,108,0.3); transform: scale(1.08); }
+    html.light .nav-icon-btn { background: rgba(0,0,0,0.05); }
+
+    /* ── PAGE ── */
+    .dashboard-page { position: relative; z-index: 2; padding: 96px 0 80px; }
+    .dashboard-container { max-width: 1100px; margin: 0 auto; padding: 0 40px; display: flex; flex-direction: column; gap: 40px; }
+
+    /* ── WELCOME BANNER ── */
+    .welcome-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 28px; padding: 32px 36px;
+      position: relative; overflow: hidden;
+      transition: background 0.35s, border-color 0.35s, box-shadow 0.3s;
+      animation: slideDown 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    .welcome-banner::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--pink), var(--cyan), transparent); }
+    .welcome-banner::after  { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(106,17,203,0.04), transparent 60%); pointer-events: none; }
+    .welcome-banner:hover { box-shadow: 0 20px 60px var(--shadow); border-color: rgba(106,17,203,0.25); }
+    .banner-left { display: flex; align-items: center; gap: 20px; }
+
+    .org-avatar {
+      width: 68px; height: 68px; border-radius: 20px; flex-shrink: 0; cursor: pointer;
+      background: linear-gradient(135deg, rgba(106,17,203,0.2), rgba(255,65,108,0.15));
+      border: 2px solid rgba(106,17,203,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: #a76ff0;
+      overflow: hidden; position: relative;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .org-avatar:hover { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(106,17,203,0.2); }
+    .org-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-edit-hint {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.5); color: #fff; font-size: 20px;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .org-avatar:hover .avatar-edit-hint { opacity: 1; }
+
+    .banner-text h1 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .banner-text p  { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 6px; transition: color 0.35s; }
+
+    .btn-edit-profile {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 50px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+      box-shadow: 0 6px 30px rgba(106,17,203,0.3);
+      transition: transform 0.2s, box-shadow 0.2s; white-space: nowrap;
+    }
+    .btn-edit-profile:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 10px 40px rgba(106,17,203,0.5); }
+
+    /* flash */
+    .flash-messages { display: flex; flex-direction: column; gap: 10px; animation: fadeUp 0.4s ease; }
+    .flash { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: 14px; font-size: 14px; font-weight: 500; }
+    .flash.success { background: rgba(80,220,100,0.08); border: 1px solid rgba(80,220,100,0.2); color: #4dd97a; }
+    .flash.warning { background: rgba(255,200,50,0.08); border: 1px solid rgba(255,200,50,0.2); color: #ffc832; }
+    .flash.error   { background: rgba(255,65,108,0.08); border: 1px solid rgba(255,65,108,0.2); color: #ff8fa3; }
+    .flash i { font-size: 18px; flex-shrink: 0; }
+
+    /* ── SECTION HEADER ── */
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .section-icon {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: rgba(106,17,203,0.12); border: 1px solid rgba(106,17,203,0.22);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #a76ff0;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .section-header:hover .section-icon { transform: rotate(-8deg) scale(1.1); box-shadow: 0 4px 16px rgba(106,17,203,0.25); }
+    .section-header h2 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
+    .section-count { margin-left: auto; padding: 3px 12px; border-radius: 50px; background: rgba(106,17,203,0.1); border: 1px solid rgba(106,17,203,0.2); font-size: 13px; font-weight: 700; color: #a76ff0; }
+
+    /* ── CARD (create form wrapper) ── */
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 32px;
+      transition: background 0.35s, border-color 0.35s, box-shadow 0.3s;
+      animation: fadeUp 0.5s ease both; animation-delay: 0.1s;
+    }
+    .card:hover { box-shadow: 0 16px 50px var(--shadow); border-color: rgba(106,17,203,0.15); }
+
+    /* ── FORM ── */
+    .create-form { display: flex; flex-direction: column; gap: 18px; }
+    .form-row    { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .form-group  { display: flex; flex-direction: column; gap: 7px; }
+    .form-label  { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); transition: color 0.35s; }
+    .form-hint   { font-size: 12px; color: var(--muted); transition: color 0.35s; }
+
+    .input-wrap { position: relative; }
+    .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 17px; color: var(--muted); pointer-events: none; z-index: 1; transition: color 0.2s; }
+    .input-wrap:focus-within .input-icon { color: var(--pink); }
+
+    .form-input, .form-textarea {
+      width: 100%; background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.2s, background 0.35s, box-shadow 0.2s, color 0.35s;
+    }
+    .form-input   { padding: 12px 14px 12px 42px; }
+    .form-textarea { padding: 12px 14px; min-height: 90px; resize: vertical; line-height: 1.6; }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--muted); }
+    .form-input:focus, .form-textarea:focus {
+      border-color: rgba(106,17,203,0.5); background: rgba(106,17,203,0.04);
+      box-shadow: 0 0 0 3px rgba(106,17,203,0.1);
+    }
+    .form-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* positions builder */
+    .positions-section { background: rgba(255,255,255,0.02); border: 1px dashed var(--border); border-radius: 16px; padding: 20px; transition: border-color 0.35s, background 0.35s; }
+    html.light .positions-section { background: rgba(0,0,0,0.02); }
+    .positions-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; font-size: 14px; font-weight: 700; color: var(--muted); }
+    .positions-header i { color: #a76ff0; margin-right: 6px; }
+    .btn-add-pos {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer;
+      background: rgba(106,17,203,0.12); border: 1px solid rgba(106,17,203,0.25); color: #a76ff0;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-add-pos:hover { background: rgba(106,17,203,0.22); transform: scale(1.04); }
+
+    .pos-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 12px; position: relative; transition: background 0.35s, border-color 0.35s; animation: fadeUp 0.3s ease; }
+    .pos-item:hover { border-color: rgba(106,17,203,0.25); }
+    .pos-grid { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 14px; }
+    .btn-remove-pos { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.2); color: var(--pink); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.2s; }
+    .btn-remove-pos:hover { background: rgba(255,65,108,0.2); transform: scale(1.1) rotate(90deg); }
+
+    .btn-create {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 32px; border-radius: 50px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+      box-shadow: 0 6px 30px rgba(106,17,203,0.3);
+      transition: transform 0.2s, box-shadow 0.2s; align-self: flex-start;
+    }
+    .btn-create:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(106,17,203,0.5); }
+    .btn-create:active { transform: none; }
+
+    /* ── ACTIVITIES LIST ── */
+    .activities-list { display: flex; flex-direction: column; gap: 14px; }
+    .activity-row {
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+      background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px 24px;
+      transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s, background 0.35s;
+      animation: fadeUp 0.5s ease both; position: relative; overflow: hidden;
+    }
+    .activity-row::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: linear-gradient(180deg, var(--purple), var(--pink));
+      transform: scaleY(0); transform-origin: bottom;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); border-radius: 0 2px 2px 0;
+    }
+    .activity-row:hover { transform: translateX(4px); border-color: rgba(106,17,203,0.25); box-shadow: 0 8px 30px var(--shadow); }
+    .activity-row:hover::before { transform: scaleY(1); }
+
+    .activity-info { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 160px; }
+    .activity-icon {
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      background: rgba(106,17,203,0.12); border: 1px solid rgba(106,17,203,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #a76ff0;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .activity-row:hover .activity-icon { transform: rotate(-8deg) scale(1.1); box-shadow: 0 4px 16px rgba(106,17,203,0.25); }
+    .activity-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+    .activity-sub  { font-size: 12px; color: var(--muted); transition: color 0.35s; }
+
+    .badge-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: 50px; font-size: 12px; font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .badge:hover { transform: scale(1.06); }
+    .badge-date   { background: rgba(0,198,255,0.08);  border: 1px solid rgba(0,198,255,0.2);  color: var(--cyan); }
+    .badge-pos    { background: rgba(106,17,203,0.1);  border: 1px solid rgba(106,17,203,0.2); color: #a76ff0; }
+    .badge-vol    { background: rgba(255,65,108,0.08); border: 1px solid rgba(255,65,108,0.2); color: var(--pink); }
+    .badge-open   { background: rgba(80,220,100,0.08); border: 1px solid rgba(80,220,100,0.2); color: #4dd97a; }
+    .badge-closed { background: rgba(255,200,50,0.08); border: 1px solid rgba(255,200,50,0.2); color: #ffc832; }
+
+    .btn-view {
+      display: inline-flex; align-items: center; gap: 7px; padding: 9px 20px; border-radius: 50px;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+      text-decoration: none; box-shadow: 0 4px 16px rgba(106,17,203,0.25);
+      transition: transform 0.2s, box-shadow 0.2s; white-space: nowrap;
+    }
+    .btn-view:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 28px rgba(106,17,203,0.45); }
+
+    /* empty */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      padding: 60px 40px; background: var(--card); border: 1px dashed var(--border);
+      border-radius: 22px; text-align: center; color: var(--muted); font-size: 15px;
+      transition: background 0.35s; animation: fadeUp 0.4s ease;
+    }
+    .empty-state i { font-size: 48px; opacity: 0.35; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+      background: var(--card); border: 1px solid var(--border); border-radius: 28px;
+      display: flex; flex-direction: column;
+      transform: translateY(30px) scale(0.97); transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), background 0.35s;
+      position: relative;
+    }
+    .modal-overlay.open .modal { transform: none; }
+    .modal::before { content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 2px; background: linear-gradient(90deg, transparent, var(--purple), var(--pink), transparent); border-radius: 0; }
+
+    .modal-head {
+      display: flex; align-items: center; gap: 12px; padding: 24px 28px 0;
+      position: sticky; top: 0; background: var(--card); z-index: 1;
+      transition: background 0.35s;
+    }
+    .modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .modal-title i { color: #a76ff0; }
+    .btn-close {
+      margin-left: auto; width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 20px; cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+    }
+    .btn-close:hover { background: rgba(255,65,108,0.12); color: var(--pink); transform: rotate(90deg); }
+
+    .modal-tabs {
+      display: flex; gap: 4px; padding: 16px 28px 0;
+      position: sticky; top: 68px; background: var(--card); z-index: 1;
+      transition: background 0.35s;
+    }
+    .m-tab {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px; border-radius: 10px; border: none;
+      background: transparent; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .m-tab.active { background: rgba(106,17,203,0.12); color: #a76ff0; }
+    .m-tab:not(.active):hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+    .modal-body { flex: 1; padding: 20px 28px; }
+    .tab-panel { display: none; animation: fadeUp 0.3s ease; }
+    .tab-panel.active { display: block; }
+
+    .modal-foot {
+      display: flex; gap: 10px; justify-content: flex-end; padding: 20px 28px;
+      border-top: 1px solid var(--border); background: var(--card);
+      position: sticky; bottom: 0; z-index: 1;
+      transition: background 0.35s, border-color 0.35s;
+    }
+    .btn-cancel {
+      padding: 11px 22px; border-radius: 50px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.15); }
+    .btn-save {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 24px; border-radius: 50px; border: none;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: #fff; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(106,17,203,0.3); transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(106,17,203,0.5); }
+
+    /* avatar section in modal */
+    .avatar-section { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .avatar-lg {
+      width: 90px; height: 90px; border-radius: 24px; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(106,17,203,0.2), rgba(255,65,108,0.15));
+      border: 2px solid rgba(106,17,203,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #a76ff0;
+      overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .avatar-lg:hover { transform: scale(1.05); box-shadow: 0 8px 30px rgba(106,17,203,0.25); }
+    .avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+
+    .drop-zone {
+      width: 100%; border: 2px dashed var(--border); border-radius: 16px;
+      padding: 28px 20px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover { border-color: rgba(106,17,203,0.5); background: rgba(106,17,203,0.04); }
+    .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .drop-icon { font-size: 32px; color: #a76ff0; margin-bottom: 10px; }
+    .drop-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .drop-sub   { font-size: 12px; color: var(--muted); }
+    .drop-fname { font-size: 13px; color: #4dd97a; margin-top: 8px; display: none; }
+
+    .btn-rm-avatar {
+      display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 10px; border: none;
+      background: rgba(255,65,108,0.08); border: 1px solid rgba(255,65,108,0.2);
+      color: var(--pink); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-rm-avatar:hover { background: rgba(255,65,108,0.18); transform: scale(1.03); }
+
+    /* form grid in modal */
+    .form-grid { display: flex; flex-direction: column; gap: 16px; }
+
+    /* password fields */
+    .pw-field-wrap { position: relative; }
+    .pw-field-wrap .form-input { padding-right: 44px; }
+    .btn-show-pw { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); font-size: 17px; display: flex; align-items: center; transition: color 0.2s; }
+    .btn-show-pw:hover { color: var(--pink); }
+    .pw-strength { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; transition: background 0.35s; }
+    .pw-strength-bar { height: 100%; width: 0; border-radius: 2px; transition: width 0.4s, background 0.4s; }
+    .pw-match { font-size: 12px; margin-top: 5px; font-weight: 600; min-height: 16px; transition: color 0.2s; }
+
+    /* ── FOOTER ── */
+    footer { position: relative; z-index: 2; border-top: 1px solid var(--border); padding: 28px 40px; transition: border-color 0.35s; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .footer-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; }
+    .footer-info  { font-size: 13px; color: var(--muted); transition: color 0.35s; }
+    .footer-tech  { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tech-pill    { padding: 4px 13px; border-radius: 50px; background: rgba(106,17,203,0.08); border: 1px solid rgba(106,17,203,0.18); font-size: 12px; color: var(--muted); font-weight: 500; transition: background 0.35s, color 0.35s; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes slideDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:none; } }
+    @keyframes fadeUp    { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:none; } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .dashboard-container { padding: 0 20px; gap: 28px; }
+      .nav-container { padding: 16px 20px; }
+      .welcome-banner { flex-direction: column; align-items: flex-start; padding: 24px; }
+      .form-row  { grid-template-columns: 1fr; }
+      .pos-grid  { grid-template-columns: 1fr; }
+      .activity-row { gap: 12px; }
+      .modal { max-height: 95vh; }
+      footer { padding: 24px 20px; }
+      .footer-inner { justify-content: center; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand">Volunteer<span>Hub</span></a>
+      <div class="nav-links">
+        <a href="/organization/dashboard" class="nav-icon-btn" title="Dashboard"><i class="ri-dashboard-line"></i></a>
+        <button class="nav-icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+          <i class="ri-sun-line" id="themeIcon"></i>
+        </button>
+        <a href="/logout" class="nav-icon-btn" title="Logout"><i class="ri-logout-box-r-line"></i></a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard-page">
+    <div class="dashboard-container">
+
+      <!-- Welcome Banner -->
+      <div class="welcome-banner">
+        <div class="banner-left">
+          <div class="org-avatar" onclick="openModal('photo')" title="Update logo">
+            {% if org_picture %}
+              <img src="{{ url_for('static', filename='uploads/avatars/' ~ org_picture) }}" alt="{{ org_name }}" />
+            {% else %}
+              {{ org_name[:2] }}
+            {% endif %}
+            <div class="avatar-edit-hint"><i class="ri-camera-line"></i></div>
+          </div>
+          <div class="banner-text">
+            <h1>{{ org_name }}</h1>
+            {% if org_representative %}
+              <p><i class="ri-user-line"></i> {{ org_representative }}</p>
+            {% else %}
+              <p>Manage your activities and volunteers.</p>
+            {% endif %}
+          </div>
+        </div>
+        <button class="btn-edit-profile" onclick="openModal('details')">
+          <i class="ri-edit-line"></i> Edit Profile
+        </button>
+      </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">
+                {% if category == 'success' %}<i class="ri-checkbox-circle-line"></i>
+                {% elif category == 'warning' %}<i class="ri-error-warning-line"></i>
+                {% else %}<i class="ri-close-circle-line"></i>{% endif %}
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- PROFILE MODAL -->
+      <div class="modal-overlay" id="profileModal">
+        <div class="modal" role="dialog" aria-modal="true">
+          <div class="modal-head">
+            <div class="modal-title"><i class="ri-building-4-line"></i> Organization Profile</div>
+            <button class="btn-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+          </div>
+          <div class="modal-tabs">
+            <button class="m-tab active" id="tab-photo"    onclick="switchTab('photo')"><i class="ri-image-line"></i> Logo</button>
+            <button class="m-tab"        id="tab-details"  onclick="switchTab('details')"><i class="ri-information-line"></i> Details</button>
+            <button class="m-tab"        id="tab-password" onclick="switchTab('password')"><i class="ri-lock-line"></i> Password</button>
+          </div>
+          <div class="modal-body">
+
+            <!-- Photo Tab -->
+            <div class="tab-panel active" id="panel-photo">
+              <div class="avatar-section">
+                <div class="avatar-lg" id="avatarPreview">
+                  {% if org_picture %}
+                    <img id="avatarPreviewImg" src="{{ url_for('static', filename='uploads/avatars/' ~ org_picture) }}" alt="" />
+                  {% else %}
+                    <span id="avatarInitialsSpan">{{ org_name[:2] }}</span>
+                    <img id="avatarPreviewImg" src="" alt="" style="display:none;" />
+                  {% endif %}
+                </div>
+                <form method="POST" action="/organization/profile/picture" enctype="multipart/form-data" id="pictureForm" style="width:100%;">
+                  <div class="drop-zone" id="dropZone">
+                    <input type="file" name="picture" id="pictureInput" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewAvatar(this)" />
+                    <div class="drop-icon"><i class="ri-upload-cloud-2-line"></i></div>
+                    <div class="drop-title">Drop your logo here or click to browse</div>
+                    <div class="drop-sub">PNG, JPG, WebP or GIF · Max 2 MB</div>
+                    <div class="drop-fname" id="dropFname"></div>
+                  </div>
+                </form>
+                {% if org_picture %}
+                  <button class="btn-rm-avatar" type="button" onclick="confirmRemoveAvatar()">
+                    <i class="ri-delete-bin-line"></i> Remove Photo
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Details Tab -->
+            <div class="tab-panel" id="panel-details">
+              <form method="POST" action="/organization/profile/update" id="detailsForm" class="form-grid" novalidate>
+                <div class="form-group">
+                  <label class="form-label" for="fName">Organization Name *</label>
+                  <div class="input-wrap"><i class="ri-building-line input-icon"></i>
+                    <input class="form-input" type="text" id="fName" name="name" value="{{ org_name }}" required />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="fRep">Representative</label>
+                  <div class="input-wrap"><i class="ri-user-line input-icon"></i>
+                    <input class="form-input" type="text" id="fRep" name="representative" value="{{ org_representative or '' }}" placeholder="e.g. John Smith" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="fPhone">Phone</label>
+                  <div class="input-wrap"><i class="ri-phone-line input-icon"></i>
+                    <input class="form-input" type="tel" id="fPhone" name="phone" value="{{ org_phone or '' }}" placeholder="+91 98765 43210" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="fEmail">Email (read-only)</label>
+                  <div class="input-wrap"><i class="ri-mail-line input-icon"></i>
+                    <input class="form-input" type="email" id="fEmail" value="{{ org_email }}" disabled />
+                  </div>
+                  <div class="form-hint">Email cannot be changed here.</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="fAddress">Address</label>
+                  <textarea class="form-textarea" id="fAddress" name="address" rows="3" placeholder="123 Main St, City">{{ org_address or '' }}</textarea>
+                </div>
+              </form>
+            </div>
+
+            <!-- Password Tab -->
+            <div class="tab-panel" id="panel-password">
+              <form method="POST" action="/organization/profile/password" id="passwordForm" class="form-grid" novalidate>
+                <div class="form-group">
+                  <label class="form-label" for="pwCurrent">Current Password</label>
+                  <div class="pw-field-wrap">
+                    <input class="form-input" type="password" id="pwCurrent" name="current_password" placeholder="Enter current password" />
+                    <button type="button" class="btn-show-pw" onclick="togglePw('pwCurrent', this)"><i class="ri-eye-line"></i></button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="pwNew">New Password</label>
+                  <div class="pw-field-wrap">
+                    <input class="form-input" type="password" id="pwNew" name="new_password" placeholder="Min 8 characters" oninput="checkStrength(this); checkMatch()" />
+                    <button type="button" class="btn-show-pw" onclick="togglePw('pwNew', this)"><i class="ri-eye-line"></i></button>
+                  </div>
+                  <div class="pw-strength"><div class="pw-strength-bar" id="strengthBar"></div></div>
+                  <div class="pw-match" id="strengthLabel"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="pwConfirm">Confirm New Password</label>
+                  <div class="pw-field-wrap">
+                    <input class="form-input" type="password" id="pwConfirm" name="confirm_password" placeholder="Repeat new password" oninput="checkMatch()" />
+                    <button type="button" class="btn-show-pw" onclick="togglePw('pwConfirm', this)"><i class="ri-eye-line"></i></button>
+                  </div>
+                  <div class="pw-match" id="matchLabel"></div>
+                </div>
+              </form>
+            </div>
+
+          </div>
+          <div class="modal-foot">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-save"   onclick="saveActive()"><i class="ri-save-line"></i> Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE ACTIVITY -->
+      <div>
+        <div class="section-header">
+          <div class="section-icon"><i class="ri-add-circle-line"></i></div>
+          <h2>Create Activity</h2>
+        </div>
+        <div class="card">
+          <form method="POST" action="/organization/create_activity" class="create-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="actName">Activity Name</label>
+                <div class="input-wrap"><i class="ri-file-list-line input-icon"></i>
+                  <input class="form-input" type="text" id="actName" name="name" placeholder="Beach Cleanup" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="actType">Type</label>
+                <div class="input-wrap"><i class="ri-price-tag-3-line input-icon"></i>
+                  <input class="form-input" type="text" id="actType" name="type" placeholder="Environment" required />
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="actPlace">Place</label>
+              <div class="input-wrap"><i class="ri-map-pin-line input-icon"></i>
+                <input class="form-input" type="text" id="actPlace" name="place" placeholder="Central Park, New York" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="actDesc">Event Description</label>
+              <textarea class="form-textarea" id="actDesc" name="description" placeholder="Describe the activity, goals, and what volunteers should expect…"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="startDate">Start Date</label>
+                <div class="input-wrap"><i class="ri-calendar-line input-icon"></i>
+                  <input class="form-input" type="date" id="startDate" name="start_date" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="endDate">End Date</label>
+                <div class="input-wrap"><i class="ri-calendar-check-line input-icon"></i>
+                  <input class="form-input" type="date" id="endDate" name="end_date" required />
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="regOpen">Registration Opens</label>
+                <div class="input-wrap"><i class="ri-door-open-line input-icon"></i>
+                  <input class="form-input" type="datetime-local" id="regOpen" name="reg_open" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="regClose">Registration Closes</label>
+                <div class="input-wrap"><i class="ri-door-closed-line input-icon"></i>
+                  <input class="form-input" type="datetime-local" id="regClose" name="reg_close" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Positions Builder -->
+            <div class="positions-section">
+              <div class="positions-header">
+                <span><i class="ri-group-line"></i> Volunteer Positions</span>
+                <button type="button" class="btn-add-pos" onclick="addPosition()"><i class="ri-add-line"></i> Add Position</button>
+              </div>
+              <div id="posContainer"></div>
+              <p id="noPosTip" style="font-size:13px;color:var(--muted);text-align:center;padding:8px 0;">
+                Click "Add Position" to define volunteer roles for this activity.
+              </p>
+            </div>
+
+            <button type="submit" class="btn-create"><i class="ri-add-line"></i> Create Activity</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- YOUR ACTIVITIES -->
+      <div>
+        <div class="section-header">
+          <div class="section-icon"><i class="ri-calendar-event-line"></i></div>
+          <h2>Your Activities</h2>
+          <span class="section-count">{{ activities | length }}</span>
+        </div>
+        {% if activities %}
+          <div class="activities-list">
+            {% for a in activities %}
+              {% set reg_open_dt  = a[7] %}
+              {% set reg_close_dt = a[8] %}
+              {% set is_open = reg_open_dt and reg_close_dt and reg_open_dt <= now <= reg_close_dt %}
+              <div class="activity-row" style="animation-delay:{{ loop.index0 * 0.07 }}s;">
+                <div class="activity-info">
+                  <div class="activity-icon"><i class="ri-calendar-event-line"></i></div>
+                  <div>
+                    <div class="activity-name">{{ a[1] }}</div>
+                    <div class="activity-sub">{{ a[2] }} · {{ a[5] }}</div>
+                  </div>
+                </div>
+                <div class="badge-row">
+                  <span class="badge badge-date"><i class="ri-calendar-line"></i> {{ a[3] }}</span>
+                  <span class="badge badge-pos"><i class="ri-briefcase-line"></i> {{ a[9] }} position{{ 's' if a[9] != 1 }}</span>
+                  <span class="badge badge-vol"><i class="ri-group-line"></i> {{ a[10] }} joined</span>
+                  {% if is_open %}
+                    <span class="badge badge-open"><i class="ri-door-open-line"></i> Registration Open</span>
+                  {% elif reg_close_dt and now > reg_close_dt %}
+                    <span class="badge badge-closed"><i class="ri-door-closed-line"></i> Closed</span>
+                  {% else %}
+                    <span class="badge badge-date"><i class="ri-time-line"></i> Not yet open</span>
+                  {% endif %}
+                </div>
+                <a href="/organization/volunteers/{{ a[0] }}" class="btn-view"><i class="ri-group-line"></i> Manage</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <i class="ri-calendar-2-line"></i>
+            No activities yet — create your first one above!
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">Volunteer<span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Hub</span></div>
+      <div class="footer-info">B.Tech 4th Semester &middot; DBMS Project</div>
+      <div class="footer-tech">
+        <span class="tech-pill">Python</span>
+        <span class="tech-pill">Flask</span>
+        <span class="tech-pill">MySQL</span>
+        <span class="tech-pill">HTML/CSS/JS</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /* ── THEME ── */
+    const html      = document.documentElement;
+    const themeBtn  = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    function applyTheme(mode) {
+      html.classList.toggle('light', mode === 'light');
+      themeIcon.className = mode === 'light' ? 'ri-moon-line' : 'ri-sun-line';
+      localStorage.setItem('vh-theme', mode);
+    }
+    applyTheme(localStorage.getItem('vh-theme') || 'dark');
+    themeBtn.addEventListener('click', () => applyTheme(html.classList.contains('light') ? 'dark' : 'light'));
+
+    /* ── NAVBAR SCROLL ── */
+    window.addEventListener('scroll', () => document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10));
+
+    /* ── SCROLL REVEAL ── */
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'none'; io.unobserve(e.target); }
+      });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.activity-row').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(18px)';
+      el.style.transition = `opacity 0.5s ease, transform 0.5s ease`;
+      io.observe(el);
+    });
+
+    /* ── POSITIONS BUILDER ── */
+    let posCount = 0;
+    function addPosition() {
+      posCount++;
+      document.getElementById('noPosTip').style.display = 'none';
+      const wrap = document.createElement('div');
+      wrap.className = 'pos-item'; wrap.id = `pos-${posCount}`;
+      wrap.innerHTML = `
+        <button type="button" class="btn-remove-pos" onclick="rmPos(${posCount})"><i class="ri-close-line"></i></button>
+        <div class="pos-grid">
+          <div class="form-group">
+            <label class="form-label">Position Title</label>
+            <input class="form-input" type="text" name="position_title[]" placeholder="e.g. First Aid Officer" style="padding-left:14px;" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Required Skills</label>
+            <input class="form-input" type="text" name="position_skills[]" placeholder="e.g. First Aid, CPR" style="padding-left:14px;" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Slots</label>
+            <input class="form-input" type="number" name="position_slots[]" placeholder="1" min="1" value="1" style="padding-left:14px;" />
+          </div>
+        </div>`;
+      document.getElementById('posContainer').appendChild(wrap);
+    }
+    function rmPos(id) {
+      document.getElementById(`pos-${id}`)?.remove();
+      if (!document.querySelectorAll('.pos-item').length) document.getElementById('noPosTip').style.display = 'block';
+    }
+
+    /* ── MODAL ── */
+    let activeTab = 'photo';
+    function openModal(tab) {
+      activeTab = tab || 'photo';
+      switchTab(activeTab);
+      document.getElementById('profileModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal() {
+      document.getElementById('profileModal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.getElementById('profileModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    function switchTab(tab) {
+      ['photo','details','password'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+        document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+      });
+      activeTab = tab;
+    }
+    function saveActive() {
+      if (activeTab === 'photo') {
+        const input = document.getElementById('pictureInput');
+        if (!input.files.length) { closeModal(); return; }
+        document.getElementById('pictureForm').submit();
+      } else if (activeTab === 'details') {
+        document.getElementById('detailsForm').submit();
+      } else {
+        document.getElementById('passwordForm').submit();
+      }
+    }
+
+    /* ── AVATAR PREVIEW ── */
+    function previewAvatar(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { alert('File too large. Maximum size is 2 MB.'); input.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.getElementById('avatarPreviewImg');
+        img.src = e.target.result; img.style.display = 'block';
+        const span = document.getElementById('avatarInitialsSpan');
+        if (span) span.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+      const fn = document.getElementById('dropFname');
+      fn.textContent = '✓ ' + file.name; fn.style.display = 'block';
+    }
+    const dz = document.getElementById('dropZone');
+    if (dz) {
+      dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+      dz.addEventListener('drop', e => {
+        e.preventDefault(); dz.classList.remove('dragover');
+        const fi = document.getElementById('pictureInput');
+        fi.files = e.dataTransfer.files; previewAvatar(fi);
+      });
+    }
+    function confirmRemoveAvatar() {
+      if (!confirm('Remove your profile picture?')) return;
+      const f = document.createElement('form'); f.method = 'POST'; f.action = '/organization/profile/remove_picture';
+      document.body.appendChild(f); f.submit();
+    }
+
+    /* ── PASSWORD ── */
+    function togglePw(id, btn) {
+      const el = document.getElementById(id);
+      const hidden = el.type === 'password';
+      el.type = hidden ? 'text' : 'password';
+      btn.querySelector('i').className = hidden ? 'ri-eye-off-line' : 'ri-eye-line';
+    }
+    function checkStrength(el) {
+      const v = el.value, bar = document.getElementById('strengthBar'), lbl = document.getElementById('strengthLabel');
+      let score = 0;
+      if (v.length >= 8) score++; if (/[A-Z]/.test(v)) score++; if (/[0-9]/.test(v)) score++; if (/[^A-Za-z0-9]/.test(v)) score++;
+      const map = [
+        { w:'0%',   bg:'transparent',          t:'' },
+        { w:'33%',  bg:'hsl(0,65%,52%)',        t:'Weak' },
+        { w:'66%',  bg:'hsl(38,80%,50%)',       t:'Medium' },
+        { w:'90%',  bg:'hsl(145,55%,42%)',      t:'Strong' },
+        { w:'100%', bg:'hsl(145,65%,38%)',      t:'Very strong' },
+      ];
+      bar.style.width = map[score].w; bar.style.background = map[score].bg;
+      lbl.textContent = map[score].t; lbl.style.color = map[score].bg; lbl.style.opacity = score ? '1' : '0';
+    }
+    function checkMatch() {
+      const nw = document.getElementById('pwNew').value, cf = document.getElementById('pwConfirm').value;
+      const lbl = document.getElementById('matchLabel');
+      if (!cf) { lbl.textContent = ''; return; }
+      lbl.textContent = nw === cf ? '✓ Passwords match' : '✗ Passwords do not match';
+      lbl.style.color = nw === cf ? '#4dd97a' : '#ff8fa3';
+    }
+  </script>
+</body>
+</html>

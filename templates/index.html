@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>VolunteerHub — College Fest</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ── THEME VARIABLES ── */
+    :root {
+      --pink:     #ff416c;
+      --purple:   #6a11cb;
+      --cyan:     #00c6ff;
+      --bg:       #07071a;
+      --card:     #10102a;
+      --border:   rgba(255,255,255,0.07);
+      --text:     #f0f0ff;
+      --muted:    rgba(240,240,255,0.5);
+      --input-bg: rgba(255,255,255,0.04);
+      --grad:     linear-gradient(135deg, var(--pink), var(--purple), var(--cyan));
+      --shadow:   rgba(0,0,0,0.5);
+      --blob-op:  0.18;
+      --nav-bg:   rgba(7,7,26,0.85);
+    }
+    html.light {
+      --bg:       #f0f2fc;
+      --card:     #ffffff;
+      --border:   rgba(0,0,0,0.09);
+      --text:     #0e0e2a;
+      --muted:    rgba(14,14,42,0.5);
+      --input-bg: rgba(0,0,0,0.03);
+      --shadow:   rgba(0,0,0,0.1);
+      --blob-op:  0.07;
+      --nav-bg:   rgba(240,242,252,0.85);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      transition: background 0.35s, color 0.35s;
+    }
+
+    /* grain */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 999;
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    }
+
+    /* blobs */
+    .blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .blob  { position: absolute; border-radius: 50%; filter: blur(120px); opacity: var(--blob-op); animation: drift 20s ease-in-out infinite alternate; transition: opacity 0.35s; }
+    .blob-1 { width: 700px; height: 700px; background: var(--purple); top: -200px; left: -200px; animation-duration: 22s; }
+    .blob-2 { width: 600px; height: 600px; background: var(--pink);   bottom: -150px; right: -150px; animation-duration: 18s; animation-delay: -8s; }
+    .blob-3 { width: 400px; height: 400px; background: var(--cyan);   top: 40%; left: 45%; animation-duration: 25s; animation-delay: -5s; }
+    @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(60px,40px) scale(1.08); } }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; position: relative; z-index: 2; }
+
+    /* ── NAVBAR ── */
+    .navbar { position: fixed; top: 0; width: 100%; z-index: 100; transition: background 0.4s, box-shadow 0.4s; }
+    .navbar.scrolled { background: var(--nav-bg); backdrop-filter: blur(24px); box-shadow: 0 1px 0 var(--border); }
+    .nav-container { max-width: 1200px; margin: 0 auto; padding: 22px 40px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; text-decoration: none; color: var(--text); letter-spacing: -0.5px; transition: color 0.35s; }
+    .brand span { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; align-items: center; gap: 36px; }
+    .nav-links a { text-decoration: none; color: var(--muted); font-size: 14px; font-weight: 500; transition: color 0.25s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-signin { padding: 10px 24px; border-radius: 50px; background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.25); color: var(--pink) !important; font-weight: 600 !important; }
+    .nav-signin:hover { background: rgba(255,65,108,0.18) !important; }
+
+    /* theme toggle */
+    .theme-toggle {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--muted); font-size: 18px;
+      transition: background 0.2s, color 0.2s, border-color 0.35s;
+    }
+    .theme-toggle:hover { background: rgba(255,65,108,0.12); color: var(--pink); border-color: rgba(255,65,108,0.3); }
+    html.light .theme-toggle { background: rgba(0,0,0,0.05); }
+
+    /* ── HERO ── */
+    .hero-section { min-height: 100vh; display: flex; align-items: center; padding: 140px 0 100px; }
+    .hero-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px;
+      border-radius: 50px; background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.3);
+      font-size: 13px; color: var(--pink); font-weight: 600; margin-bottom: 28px;
+    }
+    .hero-title { font-family: 'Syne', sans-serif; font-size: clamp(42px,5.5vw,72px); font-weight: 800; line-height: 1.05; letter-spacing: -2px; margin-bottom: 24px; }
+    .text-gradient { background: linear-gradient(90deg, var(--pink), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-desc { font-size: 16px; line-height: 1.75; color: var(--muted); max-width: 520px; margin-bottom: 44px; transition: color 0.35s; }
+    .hero-cta { display: flex; gap: 16px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 30px; border-radius: 50px; font-weight: 600; font-size: 15px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; border: none; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: linear-gradient(135deg, var(--pink), var(--purple)); color: #fff; box-shadow: 0 8px 40px rgba(255,65,108,0.35); }
+    .btn-primary:hover { box-shadow: 0 12px 50px rgba(255,65,108,0.5); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); transition: background 0.2s, border-color 0.2s, color 0.35s; }
+    .btn-outline:hover { background: rgba(255,65,108,0.08); border-color: rgba(255,65,108,0.3); }
+
+    /* login panel */
+    .login-panel { display: flex; flex-direction: column; gap: 16px; }
+    .login-card-link {
+      display: flex; align-items: center; gap: 20px; padding: 28px 30px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 24px;
+      text-decoration: none; color: var(--text);
+      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s, background 0.35s;
+      position: relative; overflow: hidden;
+    }
+    .login-card-link::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s; }
+    .login-card-link.volunteer::before { background: linear-gradient(135deg, rgba(255,65,108,0.07), transparent); }
+    .login-card-link.org::before       { background: linear-gradient(135deg, rgba(106,17,203,0.07), transparent); }
+    .login-card-link:hover { transform: translateY(-4px); box-shadow: 0 20px 60px var(--shadow); }
+    .login-card-link.volunteer:hover { border-color: rgba(255,65,108,0.4); }
+    .login-card-link.org:hover       { border-color: rgba(106,17,203,0.4); }
+    .login-card-link:hover::before   { opacity: 1; }
+    .lc-icon { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .volunteer .lc-icon { background: rgba(255,65,108,0.12); color: var(--pink); }
+    .org       .lc-icon { background: rgba(106,17,203,0.15); color: #a76ff0; }
+    .lc-text { flex: 1; }
+    .lc-text h3 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .lc-text p  { font-size: 13px; color: var(--muted); line-height: 1.5; transition: color 0.35s; }
+    .lc-arrow   { font-size: 20px; color: var(--muted); transition: transform 0.25s, color 0.25s; }
+    .login-card-link:hover .lc-arrow { transform: translateX(4px); color: var(--pink); }
+    .info-chip { display: flex; align-items: flex-start; gap: 14px; padding: 20px 24px; background: rgba(0,198,255,0.05); border: 1px solid rgba(0,198,255,0.15); border-radius: 16px; transition: background 0.35s; }
+    html.light .info-chip { background: rgba(0,198,255,0.07); }
+    .info-chip i { color: var(--cyan); font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+    .info-chip p { font-size: 13px; color: var(--muted); line-height: 1.6; transition: color 0.35s; }
+
+    /* stats */
+    .stats-bar { padding: 60px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); transition: border-color 0.35s; }
+    .stats-inner { display: flex; justify-content: space-around; align-items: center; gap: 40px; flex-wrap: wrap; }
+    .stat-num { font-family: 'Syne', sans-serif; font-size: 48px; font-weight: 800; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; margin-bottom: 6px; }
+    .stat-label { font-size: 13px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; transition: color 0.35s; }
+    .stat-divider { width: 1px; height: 60px; background: var(--border); transition: background 0.35s; }
+
+    /* sections */
+    .section { padding: 120px 0; }
+    .section-header { text-align: center; margin-bottom: 72px; }
+    .section-tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--pink); margin-bottom: 16px; }
+    .section-header h2 { font-family: 'Syne', sans-serif; font-size: clamp(32px,4vw,52px); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
+    .section-header p  { color: var(--muted); font-size: 17px; max-width: 500px; margin: 0 auto; line-height: 1.7; transition: color 0.35s; }
+
+    /* feature cards */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 24px; }
+    .feat-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 36px 32px;
+      transition: transform 0.25s, border-color 0.3s, box-shadow 0.3s, background 0.35s;
+      position: relative; overflow: hidden; transform-style: preserve-3d;
+    }
+    .feat-card::after { content: ''; position: absolute; top: -80%; left: -40%; width: 180%; height: 200%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.04), transparent); transition: top 0.6s; }
+    html.light .feat-card::after { background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent); }
+    .feat-card:hover { transform: translateY(-6px); border-color: rgba(255,65,108,0.3); box-shadow: 0 24px 80px var(--shadow); }
+    .feat-card:hover::after { top: -20%; }
+    .feat-icon { width: 52px; height: 52px; border-radius: 14px; background: rgba(255,65,108,0.1); border: 1px solid rgba(255,65,108,0.2); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--pink); margin-bottom: 22px; }
+    .feat-card h4 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+    .feat-card p  { font-size: 14px; color: var(--muted); line-height: 1.7; transition: color 0.35s; }
+    .feat-card:nth-child(2) .feat-icon { background: rgba(106,17,203,0.12); border-color: rgba(106,17,203,0.22); color: #a76ff0; }
+    .feat-card:nth-child(3) .feat-icon { background: rgba(0,198,255,0.1);   border-color: rgba(0,198,255,0.2);  color: var(--cyan); }
+    .feat-card:nth-child(4) .feat-icon { background: rgba(255,200,50,0.1);  border-color: rgba(255,200,50,0.2); color: #ffc832; }
+    .feat-card:nth-child(5) .feat-icon { background: rgba(80,255,150,0.1);  border-color: rgba(80,255,150,0.2); color: #50ff96; }
+
+    /* steps */
+    .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; position: relative; }
+    .steps::before { content: ''; position: absolute; top: 36px; left: 16.66%; right: 16.66%; height: 1px; background: linear-gradient(90deg, var(--pink), var(--cyan)); opacity: 0.3; }
+    .step { text-align: center; padding: 0 40px; }
+    .step-num { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; margin: 0 auto 28px; position: relative; z-index: 1; background: linear-gradient(135deg, rgba(255,65,108,0.15), rgba(106,17,203,0.15)); border: 1px solid rgba(255,65,108,0.3); color: var(--pink); transition: background 0.35s; }
+    .step h4 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+    .step p  { font-size: 14px; color: var(--muted); line-height: 1.7; transition: color 0.35s; }
+
+    /* two-col */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .prob-col, .sol-col { background: var(--card); border: 1px solid var(--border); border-radius: 28px; padding: 40px; transition: background 0.35s, border-color 0.35s; }
+    .prob-col { border-top: 3px solid var(--pink); }
+    .sol-col  { border-top: 3px solid var(--cyan); }
+    .col-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; padding: 6px 14px; border-radius: 50px; }
+    .prob-col .col-label { background: rgba(255,65,108,0.1); color: var(--pink); }
+    .sol-col  .col-label { background: rgba(0,198,255,0.1);  color: var(--cyan); }
+    .item-list { list-style: none; display: flex; flex-direction: column; gap: 18px; }
+    .item-list li { display: flex; align-items: flex-start; gap: 14px; font-size: 14px; color: var(--muted); line-height: 1.6; transition: color 0.35s; }
+    .item-list li i { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .prob-col .item-list li i { color: var(--pink); }
+    .sol-col  .item-list li i { color: var(--cyan); }
+
+    /* cta */
+    .cta-section { padding: 80px 0 120px; }
+    .cta-inner { background: linear-gradient(135deg, rgba(255,65,108,0.08), rgba(106,17,203,0.1), rgba(0,198,255,0.06)); border: 1px solid rgba(255,65,108,0.18); border-radius: 32px; padding: 80px 60px; text-align: center; position: relative; overflow: hidden; transition: background 0.35s, border-color 0.35s; }
+    .cta-inner::before { content: ''; position: absolute; top: -1px; left: 20%; right: 20%; height: 2px; background: linear-gradient(90deg, transparent, var(--pink), var(--cyan), transparent); }
+    .cta-inner h2 { font-family: 'Syne', sans-serif; font-size: clamp(28px,4vw,50px); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
+    .cta-inner p  { color: var(--muted); font-size: 17px; margin-bottom: 44px; max-width: 450px; margin-left: auto; margin-right: auto; transition: color 0.35s; }
+    .cta-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+    /* footer */
+    footer { border-top: 1px solid var(--border); padding: 40px 0; transition: border-color 0.35s; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .footer-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; }
+    .footer-info  { font-size: 13px; color: var(--muted); transition: color 0.35s; }
+    .footer-tech  { display: flex; gap: 10px; flex-wrap: wrap; }
+    .tech-pill    { padding: 5px 14px; border-radius: 50px; background: rgba(255,65,108,0.08); border: 1px solid rgba(255,65,108,0.18); font-size: 12px; color: var(--muted); font-weight: 500; transition: background 0.35s, color 0.35s; }
+
+    /* animations */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
+    .fade-up { opacity: 0; animation: fadeUp 0.65s ease forwards; }
+    .s1{animation-delay:.1s} .s2{animation-delay:.22s} .s3{animation-delay:.34s} .s4{animation-delay:.46s}
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* responsive */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .two-col    { grid-template-columns: 1fr; }
+      .steps      { grid-template-columns: 1fr; gap: 40px; }
+      .steps::before { display: none; }
+      .stat-divider  { display: none; }
+      .cta-inner     { padding: 48px 32px; }
+      .footer-inner  { justify-content: center; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .container { padding: 0 20px; }
+      .nav-container { padding: 18px 20px; }
+      .nav-links a:not(.nav-signin):not(.theme-toggle) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand">Volunteer<span>Hub</span></a>
+      <div class="nav-links">
+        <a href="#problem">Problems</a>
+        <a href="#solution">Solution</a>
+        <a href="#objectives">Objectives</a>
+        <a href="#how">How It Works</a>
+        <a href="/volunteer/login" class="nav-signin">Sign In</a>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+          <i class="ri-sun-line" id="themeIcon"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-inner">
+        <div>
+          <div class="hero-badge fade-up s1"><i class="ri-flashlight-line"></i> Where Every Volunteer Counts</div>
+          <h1 class="hero-title fade-up s2">College Fest<br>Volunteer<br><span class="text-gradient">Management</span></h1>
+          <p class="hero-desc fade-up s3">A centralized, database-driven system built to eliminate the chaos of manual volunteer coordination — from team assignments to real-time attendance tracking.</p>
+          <div class="hero-cta fade-up s4">
+            <a href="/volunteer/login" class="btn btn-primary"><i class="ri-user-heart-line"></i> Volunteer Login</a>
+            <a href="/organization/login" class="btn btn-outline"><i class="ri-building-line"></i> Organizer Login</a>
+          </div>
+        </div>
+
+        <div class="login-panel fade-up s3">
+          <a href="/volunteer/login" class="login-card-link volunteer">
+            <div class="lc-icon"><i class="ri-user-star-line"></i></div>
+            <div class="lc-text"><h3>Volunteer Portal</h3><p>Register for events, update availability, and track your participation</p></div>
+            <i class="ri-arrow-right-line lc-arrow"></i>
+          </a>
+          <a href="/organization/login" class="login-card-link org">
+            <div class="lc-icon"><i class="ri-building-4-line"></i></div>
+            <div class="lc-text"><h3>Organizer Portal</h3><p>Create events, assign tasks, and manage all volunteer records</p></div>
+            <i class="ri-arrow-right-line lc-arrow"></i>
+          </a>
+          <div class="info-chip">
+            <i class="ri-shield-check-line"></i>
+            <p>Real-time database updates ensure accurate coordination and zero duplication.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="container">
+      <div class="stats-inner">
+        <div class="stat-item reveal"><div class="stat-num">500+</div><div class="stat-label">Volunteers Managed</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat-item reveal"><div class="stat-num">30+</div><div class="stat-label">Events Covered</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat-item reveal"><div class="stat-num">0</div><div class="stat-label">Duplicate Records</div></div>
+        <div class="stat-divider"></div>
+        <div class="stat-item reveal"><div class="stat-num">100%</div><div class="stat-label">Real-Time Sync</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section class="section" id="problem">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-tag">The Problem</div>
+        <h2>Manual Coordination Breaks Down</h2>
+        <p>College fests are complex. Managing volunteers manually creates too many points of failure.</p>
+      </div>
+      <div class="cards-grid">
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-file-list-line"></i></div><h4>Manual Record Keeping</h4><p>Volunteer data scattered across registers, spreadsheets, and chat groups leads to duplication and inconsistencies.</p></div>
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-team-line"></i></div><h4>Unstructured Task Allocation</h4><p>Assigning volunteers to multiple teams manually becomes confusing and nearly impossible to track accurately.</p></div>
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-time-line"></i></div><h4>Attendance Issues</h4><p>Manual attendance is inaccurate, inconsistent, and leaves no reliable performance record for evaluation.</p></div>
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-shuffle-line"></i></div><h4>Many-to-Many Complexity</h4><p>One volunteer works in multiple events; each event needs multiple volunteers — a nightmare to manage by hand.</p></div>
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-error-warning-line"></i></div><h4>Last-Minute Changes</h4><p>Sudden schedule or team changes create coordination failures without a centralized system to push updates.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUTION -->
+  <section class="section" id="solution" style="padding-top:0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-tag">The Solution</div>
+        <h2>Database-Driven Efficiency</h2>
+        <p>A structured relational model that handles every complexity of volunteer management.</p>
+      </div>
+      <div class="two-col">
+        <div class="prob-col reveal">
+          <div class="col-label"><i class="ri-close-circle-line"></i> Without VolunteerHub</div>
+          <ul class="item-list">
+            <li><i class="ri-close-circle-line"></i> Scattered data in registers and chat groups</li>
+            <li><i class="ri-close-circle-line"></i> Duplicate volunteer entries everywhere</li>
+            <li><i class="ri-close-circle-line"></i> No structured task assignment process</li>
+            <li><i class="ri-close-circle-line"></i> Attendance tracking done on paper</li>
+            <li><i class="ri-close-circle-line"></i> Last-minute changes cause confusion</li>
+            <li><i class="ri-close-circle-line"></i> No performance records or evaluation</li>
+          </ul>
+        </div>
+        <div class="sol-col reveal">
+          <div class="col-label"><i class="ri-check-line"></i> With VolunteerHub</div>
+          <ul class="item-list">
+            <li><i class="ri-check-circle-line"></i> Centralized MySQL database for all records</li>
+            <li><i class="ri-check-circle-line"></i> Normalized schema eliminates duplication</li>
+            <li><i class="ri-check-circle-line"></i> Role-based portals for volunteers and organizers</li>
+            <li><i class="ri-check-circle-line"></i> Digital attendance with full history</li>
+            <li><i class="ri-check-circle-line"></i> Real-time updates across the system</li>
+            <li><i class="ri-check-circle-line"></i> Performance tracking and contribution records</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-tag">How It Works</div>
+        <h2>Simple. Structured. Reliable.</h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal"><div class="step-num">01</div><h4>Register &amp; Set Up</h4><p>Volunteers register through the portal with their details, skills, and availability for the fest.</p></div>
+        <div class="step reveal"><div class="step-num">02</div><h4>Assign &amp; Coordinate</h4><p>Organizers create events, assign volunteers to teams and tasks, and publish schedules instantly.</p></div>
+        <div class="step reveal"><div class="step-num">03</div><h4>Track &amp; Evaluate</h4><p>Attendance is recorded digitally. Organizers monitor performance and volunteers view their contributions.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OBJECTIVES -->
+  <section class="section" id="objectives" style="padding-top:0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-tag">Project Objectives</div>
+        <h2>Built With Purpose</h2>
+        <p>Every feature of VolunteerHub maps directly to a core project objective.</p>
+      </div>
+      <div class="cards-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-focus-3-line"></i></div><h4>Centralized Management</h4><p>Store and manage all volunteer and event data in one unified, accessible system.</p></div>
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-bar-chart-box-line"></i></div><h4>Performance Monitoring</h4><p>Accurate records of attendance and contributions for fair performance evaluation.</p></div>
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-check-double-line"></i></div><h4>Error Reduction</h4><p>Minimize duplication, data inconsistencies, and manual mistakes through normalization.</p></div>
+        <div class="feat-card reveal"><div class="feat-icon"><i class="ri-speed-line"></i></div><h4>Efficient Coordination</h4><p>Improve communication and streamline coordination across all teams during the fest.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-inner reveal">
+        <h2>Ready to Volunteer?</h2>
+        <p>Join hundreds of students making College Fest an unforgettable experience.</p>
+        <div class="cta-btns">
+          <a href="/volunteer/login" class="btn btn-primary"><i class="ri-user-heart-line"></i> Join as Volunteer</a>
+          <a href="/organization/login" class="btn btn-outline"><i class="ri-building-line"></i> Organizer Access</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">Volunteer<span style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Hub</span></div>
+        <div class="footer-info">B.Tech 4th Semester &middot; DBMS Project</div>
+        <div class="footer-tech">
+          <span class="tech-pill">Python</span>
+          <span class="tech-pill">Flask</span>
+          <span class="tech-pill">MySQL</span>
+          <span class="tech-pill">HTML/CSS/JS</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /* ── THEME ── */
+    const html      = document.documentElement;
+    const themeBtn  = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+
+    function applyTheme(mode) {
+      if (mode === 'light') {
+        html.classList.add('light');
+        themeIcon.className = 'ri-moon-line';   // show moon = click to go dark
+      } else {
+        html.classList.remove('light');
+        themeIcon.className = 'ri-sun-line';    // show sun = click to go light
+      }
+      localStorage.setItem('vh-theme', mode);
+    }
+
+    // Load saved preference (default: dark)
+    applyTheme(localStorage.getItem('vh-theme') || 'dark');
+
+    themeBtn.addEventListener('click', () => {
+      applyTheme(html.classList.contains('light') ? 'dark' : 'light');
+    });
+
+    /* ── NAVBAR SCROLL ── */
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 30));
+
+    /* ── SCROLL REVEAL ── */
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    /* ── 3D TILT ── */
+    document.querySelectorAll('.feat-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        card.style.transform = `translateY(-6px) rotateX(${-(e.clientY-r.top-r.height/2)/18}deg) rotateY(${(e.clientX-r.left-r.width/2)/18}deg)`;
+      });
+      card.addEventListener('mouseleave', () => card.style.transform = '');
+    });
+  </script>
+
+</body>
+</html>

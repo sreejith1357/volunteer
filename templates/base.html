@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title if title else "Volunteer App" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="{{ 'dark' if session.get('dark_mode') else '' }}">
+    {% block content %}{% endblock %}
+</body>
+</html>
